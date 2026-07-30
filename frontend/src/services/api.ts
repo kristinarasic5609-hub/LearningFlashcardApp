@@ -63,6 +63,9 @@ export const api = {
     request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (body: { email: string; password: string }) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  updateProfile: (body: { email: string; username: string; password?: string }) =>
+    request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
   getSets: (search?: string) =>
     request(`/sets${search ? `?search=${encodeURIComponent(search)}` : ''}`),
   getMySets: () => request('/sets/mine'),
@@ -80,8 +83,4 @@ export const api = {
   recordResult: (body: object) =>
     request('/learning/result', { method: 'POST', body: JSON.stringify(body) }),
   getStatistics: (userId: string) => request(`/statistics/user/${userId}`),
-  getAdminUsers: () => request('/admin/users'),
-  deleteAdminUser: (id: string) => request(`/admin/users/${id}`, { method: 'DELETE' }),
-  getAdminSets: () => request('/admin/sets'),
-  deleteAdminSet: (id: string) => request(`/admin/sets/${id}`, { method: 'DELETE' }),
 };

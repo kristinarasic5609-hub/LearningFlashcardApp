@@ -26,7 +26,7 @@ public class FlashcardController {
             @PathVariable("id") String setId,
             @Valid @RequestBody CreateFlashcardRequest request) {
         AuthUserDto user = SecurityUtils.requireCurrentUser();
-        return flashcardService.addToSet(setId, user, request);
+        return flashcardService.createFlashcard(setId, user, request);
     }
 
     @PutMapping("/cards/{id}")
@@ -34,13 +34,13 @@ public class FlashcardController {
             @PathVariable String id,
             @Valid @RequestBody UpdateFlashcardRequest request) {
         AuthUserDto user = SecurityUtils.requireCurrentUser();
-        return flashcardService.update(id, user, request);
+        return flashcardService.updateFlashcard(id, user, request);
     }
 
     @DeleteMapping("/cards/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCard(@PathVariable String id) {
         AuthUserDto user = SecurityUtils.requireCurrentUser();
-        flashcardService.delete(id, user);
+        flashcardService.deleteFlashcard(id, user);
     }
 }

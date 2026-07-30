@@ -1,6 +1,7 @@
 package com.flashlearn.app.service;
 
 import com.flashlearn.app.exception.AppException;
+import com.flashlearn.app.factory.FlashcardFactory;
 import com.flashlearn.app.model.dto.AuthUserDto;
 import com.flashlearn.app.model.dto.CreateFlashcardRequest;
 import com.flashlearn.app.model.dto.UpdateFlashcardRequest;
@@ -16,25 +17,28 @@ public class FlashcardService {
 
     private final FlashcardRepository flashcardRepository;
     private final FlashcardSetRepository flashcardSetRepository;
+    private final FlashcardFactory flashcardFactory;
 
-    public FlashcardService(FlashcardRepository flashcardRepository, FlashcardSetRepository flashcardSetRepository) {
+    public FlashcardService(
+            FlashcardRepository flashcardRepository,
+            FlashcardSetRepository flashcardSetRepository,
+            FlashcardFactory flashcardFactory) {
         this.flashcardRepository = flashcardRepository;
         this.flashcardSetRepository = flashcardSetRepository;
+        this.flashcardFactory = flashcardFactory;
     }
 
     @Transactional
-    public Flashcard addToSet(String setId, AuthUserDto user, CreateFlashcardRequest request) {
+    public Flashcard createFlashcard(String setId, AuthUserDto user, CreateFlashcardRequest request) {
         ensureOwnership(setId, user.id());
 
-        Flashcard card = new Flashcard();
-        card.setQuestion(request.getQuestion());
-        card.setAnswer(request.getAnswer());
-        card.setFlashcardSetId(setId);
+        Flashcard card = flashcardFactory.createFlashcard(
+                setId, request.getQuestion(), request.getAnswer());
         return flashcardRepository.save(card);
     }
 
     @Transactional
-    public Flashcard update(String cardId, AuthUserDto user, UpdateFlashcardRequest request) {
+    public Flashcard updateFlashcard(String cardId, AuthUserDto user, UpdateFlashcardRequest request) {
         Flashcard card = flashcardRepository.findByIdWithSet(cardId)
                 .orElseThrow(() -> new AppException(404, "Flashcard not found"));
 
@@ -53,7 +57,7 @@ public class FlashcardService {
     }
 
     @Transactional
-    public void delete(String cardId, AuthUserDto user) {
+    public void deleteFlashcard(String cardId, AuthUserDto user) {
         Flashcard card = flashcardRepository.findByIdWithSet(cardId)
                 .orElseThrow(() -> new AppException(404, "Flashcard not found"));
 

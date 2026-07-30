@@ -15,6 +15,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -34,6 +36,9 @@ class LearningIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private StatisticsRepository statisticsRepository;
+
+    @Autowired
     private LearningResultRepository learningResultRepository;
 
     @Autowired
@@ -49,6 +54,7 @@ class LearningIntegrationTest {
     void cleanDatabase() {
         learningResultRepository.deleteAll();
         learningSessionRepository.deleteAll();
+        statisticsRepository.deleteAll();
         flashcardRepository.deleteAll();
         flashcardSetRepository.deleteAll();
         userRepository.deleteAll();
@@ -150,6 +156,12 @@ class LearningIntegrationTest {
                 .andExpect(jsonPath("$.correctAnswers").value(1))
                 .andExpect(jsonPath("$.incorrectAnswers").value(1))
                 .andExpect(jsonPath("$.successPercentage").value(50));
+
+        var stats = statisticsRepository.findByUserId(userId);
+        assertTrue(stats.isPresent());
+        assertEquals(1, stats.get().getCorrectAnswers());
+        assertEquals(1, stats.get().getWrongAnswers());
+        assertEquals(50, stats.get().getSuccessRate());
     }
 
     @Test

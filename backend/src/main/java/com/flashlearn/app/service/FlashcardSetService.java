@@ -34,11 +34,6 @@ public class FlashcardSetService {
     }
 
     @Transactional(readOnly = true)
-    public List<FlashcardSet> listAll() {
-        return flashcardSetRepository.findAllWithDetails();
-    }
-
-    @Transactional(readOnly = true)
     public FlashcardSet getById(String id, AuthUserDto user) {
         FlashcardSet set = flashcardSetRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new AppException(404, "Flashcard set not found"));
@@ -86,13 +81,6 @@ public class FlashcardSetService {
     @Transactional
     public void delete(String id, AuthUserDto user) {
         FlashcardSet set = getOwnedSet(id, user.id());
-        flashcardSetRepository.delete(set);
-    }
-
-    @Transactional
-    public void adminDelete(String id) {
-        FlashcardSet set = flashcardSetRepository.findByIdWithDetails(id)
-                .orElseThrow(() -> new AppException(404, "Flashcard set not found"));
         flashcardSetRepository.delete(set);
     }
 

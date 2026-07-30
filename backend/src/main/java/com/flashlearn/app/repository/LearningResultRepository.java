@@ -14,6 +14,8 @@ public interface LearningResultRepository extends JpaRepository<LearningResult, 
 
     long countBySessionId(String sessionId);
 
+    List<LearningResult> findBySessionId(String sessionId);
+
     @Query("""
             SELECT r FROM LearningResult r
             JOIN r.session s

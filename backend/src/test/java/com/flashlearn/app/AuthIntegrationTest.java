@@ -3,6 +3,7 @@ package com.flashlearn.app;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flashlearn.app.model.dto.LoginRequest;
 import com.flashlearn.app.model.dto.RegisterRequest;
+import com.flashlearn.app.model.dto.UpdateProfileRequest;
 import com.flashlearn.app.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,11 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,6 +32,9 @@ class AuthIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private StatisticsRepository statisticsRepository;
+
+    @Autowired
     private LearningResultRepository learningResultRepository;
 
     @Autowired
@@ -43,13 +46,11 @@ class AuthIntegrationTest {
     @Autowired
     private FlashcardSetRepository flashcardSetRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
     @BeforeEach
     void cleanDatabase() {
         learningResultRepository.deleteAll();
         learningSessionRepository.deleteAll();
+        statisticsRepository.deleteAll();
         flashcardRepository.deleteAll();
         flashcardSetRepository.deleteAll();
         userRepository.deleteAll();
@@ -122,24 +123,46 @@ class AuthIntegrationTest {
     }
 
     @Test
-    void deniesAdminAccessForRegularUser() throws Exception {
-        RegisterRequest request = new RegisterRequest();
-        request.setEmail("user@test.com");
-        request.setUsername("regular");
-        request.setPassword("password123");
+    void updatesProfile() throws Exception {
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setEmail("profile@user.com");
+        registerRequest.setUsername("oldname");
+        registerRequest.setPassword("password123");
 
-        String response = mockMvc.perform(post("/api/auth/register")
+        String authResponse = mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isCreated())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
-        String token = objectMapper.readTree(response).get("token").asText();
+        String token = objectMapper.readTree(authResponse).get("token").asText();
 
-        mockMvc.perform(get("/api/admin/users")
-                        .header("Authorization", "Bearer " + token))
-                .andExpect(status().isForbidden());
+        UpdateProfileRequest updateRequest = new UpdateProfileRequest();
+        updateRequest.setEmail("profile@user.com");
+        updateRequest.setUsername("newname");
+
+        mockMvc.perform(put("/api/auth/profile")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.username").value("newname"));
+    }
+
+    @Test
+    void registrationPersistsToDatabase() throws Exception {
+        RegisterRequest request = new RegisterRequest();
+        request.setEmail("db@user.com");
+        request.setUsername("dbuser");
+        request.setPassword("password123");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+
+        org.junit.jupiter.api.Assertions.assertTrue(userRepository.findByEmail("db@user.com").isPresent());
     }
 }

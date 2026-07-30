@@ -32,7 +32,6 @@ public class JwtService {
                 .claim("id", user.id())
                 .claim("email", user.email())
                 .claim("username", user.username())
-                .claim("role", user.role())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(secretKey)
@@ -49,8 +48,7 @@ public class JwtService {
         return new AuthUserDto(
                 claims.get("id", String.class),
                 claims.get("email", String.class),
-                claims.get("username", String.class),
-                claims.get("role", String.class)
+                claims.get("username", String.class)
         );
     }
 }

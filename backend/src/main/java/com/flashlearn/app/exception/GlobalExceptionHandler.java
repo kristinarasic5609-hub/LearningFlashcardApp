@@ -38,14 +38,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, String>> handleAccessDenied(
-            AccessDeniedException ex,
-            HttpServletRequest request) {
-        String message = request.getRequestURI().startsWith("/api/admin")
-                ? "Administrator access required"
-                : "Access denied";
+    public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("error", message));
+                .body(Map.of("error", "Access denied"));
     }
 
     @ExceptionHandler(LazyInitializationException.class)

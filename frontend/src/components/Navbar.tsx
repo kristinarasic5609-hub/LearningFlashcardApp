@@ -26,7 +26,7 @@ function NavItem({
 }
 
 export function Navbar() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeMobile = () => setMobileOpen(false);
 
@@ -42,15 +42,8 @@ export function Navbar() {
       <NavItem to="/dashboard" onNavigate={closeMobile}>Dashboard</NavItem>
       <NavItem to="/my-sets" onNavigate={closeMobile}>My Sets</NavItem>
       <NavItem to="/statistics" onNavigate={closeMobile}>Statistics</NavItem>
+      <NavItem to="/profile" onNavigate={closeMobile}>Profile</NavItem>
     </>
-  );
-
-  const adminLinks = (
-    <div className="nav-group nav-group-admin">
-      <span className="nav-group-label">Admin</span>
-      <NavItem to="/admin/users" onNavigate={closeMobile}>Users</NavItem>
-      <NavItem to="/admin/sets" onNavigate={closeMobile}>Sets</NavItem>
-    </div>
   );
 
   return (
@@ -80,7 +73,6 @@ export function Navbar() {
           <div className="nav-section">
             {!user && guestLinks}
             {user && userLinks}
-            {user && isAdmin && adminLinks}
           </div>
 
           <div className="nav-section nav-section-account">
@@ -92,7 +84,6 @@ export function Navbar() {
                   </span>
                   <div>
                     <span className="nav-user-name">{user.username}</span>
-                    <span className="nav-user-role">{user.role}</span>
                   </div>
                 </div>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>

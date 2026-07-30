@@ -25,14 +25,14 @@ public class LearningController {
     @ResponseStatus(HttpStatus.CREATED)
     public LearningSessionStartResponse startSession(@PathVariable String setId) {
         AuthUserDto user = SecurityUtils.requireCurrentUser();
-        return learningService.startSession(user.id(), setId);
+        return learningService.startLearning(user.id(), setId);
     }
 
     @PostMapping("/learning/result")
     @ResponseStatus(HttpStatus.CREATED)
     public LearningResult recordResult(@Valid @RequestBody LearningResultRequest request) {
         AuthUserDto user = SecurityUtils.requireCurrentUser();
-        return learningService.recordResult(user, request);
+        return learningService.saveResults(user, request);
     }
 
     @GetMapping("/statistics/user/{id}")

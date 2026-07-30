@@ -6,6 +6,7 @@ import com.flashlearn.app.model.entity.Flashcard;
 import com.flashlearn.app.model.entity.FlashcardSet;
 import com.flashlearn.app.model.entity.LearningResult;
 import com.flashlearn.app.model.entity.LearningSession;
+import com.flashlearn.app.model.entity.Statistics;
 import com.flashlearn.app.repository.FlashcardRepository;
 import com.flashlearn.app.repository.FlashcardSetRepository;
 import com.flashlearn.app.repository.LearningResultRepository;
@@ -27,20 +28,23 @@ public class LearningService {
     private final FlashcardRepository flashcardRepository;
     private final LearningSessionRepository learningSessionRepository;
     private final LearningResultRepository learningResultRepository;
+    private final StatisticsTrackingService statisticsTrackingService;
 
     public LearningService(
             FlashcardSetRepository flashcardSetRepository,
             FlashcardRepository flashcardRepository,
             LearningSessionRepository learningSessionRepository,
-            LearningResultRepository learningResultRepository) {
+            LearningResultRepository learningResultRepository,
+            StatisticsTrackingService statisticsTrackingService) {
         this.flashcardSetRepository = flashcardSetRepository;
         this.flashcardRepository = flashcardRepository;
         this.learningSessionRepository = learningSessionRepository;
         this.learningResultRepository = learningResultRepository;
+        this.statisticsTrackingService = statisticsTrackingService;
     }
 
     @Transactional
-    public LearningSessionStartResponse startSession(String userId, String setId) {
+    public LearningSessionStartResponse startLearning(String userId, String setId) {
         FlashcardSet set = flashcardSetRepository.findByIdWithDetails(setId)
                 .orElseThrow(() -> new AppException(404, "Flashcard set not found"));
 
@@ -62,7 +66,7 @@ public class LearningService {
     }
 
     @Transactional
-    public LearningResult recordResult(AuthUserDto user, LearningResultRequest request) {
+    public LearningResult saveResults(AuthUserDto user, LearningResultRequest request) {
         LearningSession session = learningSessionRepository.findById(request.getSessionId())
                 .orElseThrow(() -> new AppException(404, "Learning session not found"));
 
@@ -88,8 +92,14 @@ public class LearningService {
         long answeredCount = learningResultRepository.countBySessionId(request.getSessionId());
         long totalCards = flashcardRepository.countByFlashcardSetId(session.getFlashcardSetId());
         if (answeredCount >= totalCards && session.getCompletedAt() == null) {
+            List<LearningResult> sessionResults =
+                    learningResultRepository.findBySessionId(session.getId());
+            int sessionCorrect = (int) sessionResults.stream().filter(LearningResult::isKnown).count();
+            session.setScore(StatisticsTrackingService.calculateSessionScore(
+                    sessionCorrect, sessionResults.size()));
             session.setCompletedAt(Instant.now());
             learningSessionRepository.save(session);
+            statisticsTrackingService.updateUserStatistics(user.id());
         }
 
         return result;
@@ -97,22 +107,29 @@ public class LearningService {
 
     @Transactional(readOnly = true)
     public UserStatisticsResponse getUserStatistics(String userId, AuthUserDto requester) {
-        if (!"ADMIN".equals(requester.role()) && !requester.id().equals(userId)) {
+        if (!requester.id().equals(userId)) {
             throw new AppException(403, "Access denied");
         }
 
+        Statistics statistics = statisticsTrackingService.getUserStatistics(userId);
         List<LearningSession> sessions = learningSessionRepository.findByUserIdWithDetails(userId);
         List<LearningResult> allResults = learningResultRepository.findAllByUserId(userId);
 
         Map<String, List<LearningResult>> resultsBySession = allResults.stream()
                 .collect(Collectors.groupingBy(LearningResult::getSessionId));
 
-        int correctAnswers = (int) allResults.stream().filter(LearningResult::isKnown).count();
-        int incorrectAnswers = allResults.size() - correctAnswers;
-        int totalCardsStudied = allResults.size();
-        int successPercentage = totalCardsStudied > 0
-                ? Math.round((correctAnswers * 100f) / totalCardsStudied)
-                : 0;
+        int correctAnswers = statistics != null
+                ? statistics.getCorrectAnswers()
+                : (int) allResults.stream().filter(LearningResult::isKnown).count();
+        int incorrectAnswers = statistics != null
+                ? statistics.getWrongAnswers()
+                : allResults.size() - correctAnswers;
+        int totalCardsStudied = correctAnswers + incorrectAnswers;
+        int successPercentage = statistics != null
+                ? statistics.getSuccessRate()
+                : (totalCardsStudied > 0
+                        ? Math.round((correctAnswers * 100f) / totalCardsStudied)
+                        : 0);
 
         List<UserStatisticsResponse.ProgressHistoryEntry> progressHistory = new ArrayList<>();
         for (LearningSession session : sessions) {
@@ -120,9 +137,9 @@ public class LearningService {
             int sessionCorrect = (int) sessionResults.stream().filter(LearningResult::isKnown).count();
             int sessionTotal = sessionResults.size();
             int sessionIncorrect = sessionTotal - sessionCorrect;
-            int sessionSuccess = sessionTotal > 0
-                    ? Math.round((sessionCorrect * 100f) / sessionTotal)
-                    : 0;
+            int sessionSuccess = session.getScore() != null
+                    ? session.getScore()
+                    : StatisticsTrackingService.calculateSessionScore(sessionCorrect, sessionTotal);
 
             Instant studiedAt = session.getCompletedAt() != null
                     ? session.getCompletedAt()

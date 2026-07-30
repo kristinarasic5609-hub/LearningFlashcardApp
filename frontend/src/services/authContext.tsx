@@ -8,7 +8,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
   logout: () => void;
-  isAdmin: boolean;
+  updateProfile: (email: string, username: string, password?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -36,10 +36,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user);
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await api.logout();
+    } catch {
+      // Logout is primarily client-side; ignore server errors.
+    }
     setToken(null);
     setStoredUser(null);
     setUser(null);
+  }
+
+  async function updateProfile(email: string, username: string, password?: string) {
+    const body: { email: string; username: string; password?: string } = { email, username };
+    if (password) {
+      body.password = password;
+    }
+    const res = (await api.updateProfile(body)) as AuthResponse;
+    setToken(res.token);
+    setStoredUser(res.user);
+    setUser(res.user);
   }
 
   return (
@@ -50,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
-        isAdmin: user?.role === 'ADMIN',
+        updateProfile,
       }}
     >
       {children}

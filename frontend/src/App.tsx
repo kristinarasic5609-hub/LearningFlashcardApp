@@ -14,8 +14,7 @@ import { CreateSetPage } from './pages/CreateSetPage';
 import { EditSetPage } from './pages/EditSetPage';
 import { LearningSessionPage } from './pages/LearningSessionPage';
 import { StatisticsPage } from './pages/StatisticsPage';
-import { AdminUsersPage } from './pages/AdminUsersPage';
-import { AdminSetsPage } from './pages/AdminSetsPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 export default function App() {
   return (
@@ -78,18 +77,10 @@ export default function App() {
                 }
               />
               <Route
-                path="/admin/users"
+                path="/profile"
                 element={
-                  <ProtectedRoute adminOnly>
-                    <AdminUsersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/sets"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminSetsPage />
+                  <ProtectedRoute>
+                    <ProfilePage />
                   </ProtectedRoute>
                 }
               />

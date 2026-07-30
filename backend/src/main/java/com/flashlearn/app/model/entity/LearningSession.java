@@ -28,6 +28,9 @@ public class LearningSession {
 
     private Instant completedAt;
 
+    /** Session success score (0–100), set when all cards are answered. */
+    private Integer score;
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userId", insertable = false, updatable = false)
@@ -81,6 +84,14 @@ public class LearningSession {
 
     public void setCompletedAt(Instant completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Integer getScore() {
+        return score;
+    }
+
+    public void setScore(Integer score) {
+        this.score = score;
     }
 
     public User getUser() {
